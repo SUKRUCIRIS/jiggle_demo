@@ -30,7 +30,7 @@ mat4 normal = GLM_MAT4_IDENTITY_INIT;
 
 // vec3 pos, vec3 norm, vec4 color, float jiggle_coefficient, float damping_coefficient
 // bottom of the cube isn't jiggling, top of the cube is jiggling
-float cube_vertices[] = {
+GLfloat cube_vertices[] = {
     -0.5f, -0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0, 0,      // A 0
     -0.5f, 0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0.1f, 0.5f, // B 1
     0.5f, 0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0.1f, 0.5f,  // C 2
@@ -62,7 +62,7 @@ float cube_vertices[] = {
     0.5f, 0.5f, 0.5f, 0, 1, 0, 0.2f, 1.0f, 1.0f, 1.0f, 0.1f, 0.5f,   // G 23
 };
 
-float cube_indices[] = {
+GLuint cube_indices[] = {
     // front and back
     2, 1, 0,
     0, 3, 2,
@@ -86,7 +86,7 @@ void init_demo()
     {
         return;
     }
-    cam = create_camera(800, 600, (vec3){0.0f, 5, 60.0f}, 60, 0.1f, 1000, 1, 100, -90, (vec3){0, 1, 0});
+    cam = create_camera(800, 600, (vec3){0.0f, 2, 5.0f}, 60, 0.1f, 1000, 1, 100, -30, (vec3){1, 0, 0});
     init_shader_program();
     program = get_shader_program();
 
@@ -103,18 +103,72 @@ void init_demo()
     last_movement_time_loc = glGetUniformLocation(program, "last_movement_time");
 
     glm_vec3_normalize(lightDir);
+
+    if (VAO != 0)
+    {
+        glDeleteVertexArrays(1, &VAO);
+    }
+    if (VBO != 0)
+    {
+        glDeleteBuffers(1, &VBO);
+    }
+    if (EBO != 0)
+    {
+        glDeleteBuffers(1, &EBO);
+    }
+    glBindVertexArray(0);
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, 288 * sizeof(GLfloat), cube_vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(GLfloat), 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 12 * sizeof(GLfloat), (void *)(6 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 12 * sizeof(GLfloat), (void *)(10 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 12 * sizeof(GLfloat), (void *)(11 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(4);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 36 * sizeof(GLuint), cube_indices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void play_demo()
 {
-    while (!get_key_down(GLFW_KEY_ESCAPE))
+    glUseProgram(program);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    while (!get_key_down(GLFW_KEY_ESCAPE) && !glfwWindowShouldClose(window))
     {
         glfwPollEvents();
         poll_events(window);
         run_input_free_camera(cam, window);
+        calculate_camera(cam, 0.1f, 1000);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glm_mat4_mulN((mat4 *[]){&translation, &rotation, &scale}, 3, model);
+        glm_mat4_inv(model, normal);
+        glm_mat4_transpose(normal);
+
+        glUniformMatrix4fv(camera_loc, 1, GL_FALSE, cam->result[0]);
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
+        glUniformMatrix4fv(normalMatrix_loc, 1, GL_FALSE, normal[0]);
+        glUniform3fv(lightColor_loc, 1, lightColor);
+        glUniform3fv(lightDir_loc, 1, lightDir);
+        glUniform1f(ambient_loc, ambient);
+        glUniform1f(time_loc, time);
+        glUniform3fv(last_movement_normal_loc, 1, last_movement_normal);
+        glUniform1f(last_movement_time_loc, last_movement_time);
+
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
     }

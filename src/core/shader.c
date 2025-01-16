@@ -68,7 +68,7 @@ GLuint compile_program(const char *frag_shader_file, const char *vert_shader_fil
 
 void init_shader_program()
 {
-    if (shader != 0)
+    if (shader == 0)
     {
         shader = compile_program("./shaders/default.fs", "./shaders/default.vs", 0);
     }

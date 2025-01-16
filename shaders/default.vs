@@ -37,7 +37,7 @@ void main(){
             }
         }
     }
-    gl_Position *= camera;
+    gl_Position = camera * gl_Position;
     vec3 normal = normalize(norm * mat3(normalMatrix));
     vec3 lightDirection = normalize(lightDir);
 	float diffuse = max(dot(normal, lightDirection), 0.0);
