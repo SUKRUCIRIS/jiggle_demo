@@ -13,6 +13,7 @@ GLint ambient_loc = 0;
 GLint time_loc = 0;
 GLint last_movement_normal_loc = 0;
 GLint last_movement_time_loc = 0;
+GLint first_movement_time_loc = 0;
 
 vec3 lightColor = {1.0f, 1.0f, 1.0f};
 vec3 lightDir = {20, 50, 20};
@@ -20,6 +21,7 @@ float ambient = 0.5f;
 float time = 0.0f;
 vec3 last_movement_normal = {0, 0, 0};
 float last_movement_time = 0.0f;
+float first_movement_time = 0.0f;
 
 GLuint VAO = 0, VBO = 0, EBO = 0;
 mat4 translation = GLM_MAT4_IDENTITY_INIT;
@@ -31,35 +33,35 @@ mat4 normal = GLM_MAT4_IDENTITY_INIT;
 // vec3 pos, vec3 norm, vec4 color, float jiggle_coefficient, float damping_coefficient
 // bottom of the cube isn't jiggling, top of the cube is jiggling
 GLfloat cube_vertices[] = {
-    -0.5f, -0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0, 0,      // A 0
-    -0.5f, 0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0.1f, 0.5f, // B 1
-    0.5f, 0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0.1f, 0.5f,  // C 2
-    0.5f, -0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0, 0,       // D 3
+    -0.5f, -0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0, 0,       // A 0
+    -0.5f, 0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0.2f, 0.05f, // B 1
+    0.5f, 0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0.2f, 0.05f,  // C 2
+    0.5f, -0.5f, -0.5f, 0, 0, -1, 1.0f, 0.2f, 0.2f, 1.0f, 0, 0,        // D 3
 
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 0.2f, 0.4f, 1.0f, 1.0f, 0, 0,      // E 4
-    0.5f, -0.5f, 0.5f, 0, 0, 1, 0.2f, 0.4f, 1.0f, 1.0f, 0, 0,       // F 5
-    0.5f, 0.5f, 0.5f, 0, 0, 1, 0.2f, 0.4f, 1.0f, 1.0f, 0.1f, 0.5f,  // G 6
-    -0.5f, 0.5f, 0.5f, 0, 0, 1, 0.2f, 0.4f, 1.0f, 1.0f, 0.1f, 0.5f, // H 7
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 0.2f, 0.4f, 1.0f, 1.0f, 0, 0,       // E 4
+    0.5f, -0.5f, 0.5f, 0, 0, 1, 0.2f, 0.4f, 1.0f, 1.0f, 0, 0,        // F 5
+    0.5f, 0.5f, 0.5f, 0, 0, 1, 0.2f, 0.4f, 1.0f, 1.0f, 0.2f, 0.05f,  // G 6
+    -0.5f, 0.5f, 0.5f, 0, 0, 1, 0.2f, 0.4f, 1.0f, 1.0f, 0.2f, 0.05f, // H 7
 
-    -0.5f, 0.5f, -0.5f, -1, 0, 0, 0.2f, 1.0f, 0.4f, 1.0f, 0.1f, 0.5f, // B 8
-    -0.5f, -0.5f, -0.5f, -1, 0, 0, 0.2f, 1.0f, 0.4f, 1.0f, 0, 0,      // A 9
-    -0.5f, -0.5f, 0.5f, -1, 0, 0, 0.2f, 1.0f, 0.4f, 1.0f, 0, 0,       // E 10
-    -0.5f, 0.5f, 0.5f, -1, 0, 0, 0.2f, 1.0f, 0.4f, 1.0f, 0.1f, 0.5f,  // H 11
+    -0.5f, 0.5f, -0.5f, -1, 0, 0, 0.2f, 1.0f, 0.4f, 1.0f, 0.2f, 0.05f, // B 8
+    -0.5f, -0.5f, -0.5f, -1, 0, 0, 0.2f, 1.0f, 0.4f, 1.0f, 0, 0,       // A 9
+    -0.5f, -0.5f, 0.5f, -1, 0, 0, 0.2f, 1.0f, 0.4f, 1.0f, 0, 0,        // E 10
+    -0.5f, 0.5f, 0.5f, -1, 0, 0, 0.2f, 1.0f, 0.4f, 1.0f, 0.2f, 0.05f,  // H 11
 
-    0.5f, -0.5f, -0.5f, 1, 0, 0, 1.0f, 0.9f, 0.2f, 1.0f, 0, 0,      // D 12
-    0.5f, 0.5f, -0.5f, 1, 0, 0, 1.0f, 0.9f, 0.2f, 1.0f, 0.1f, 0.5f, // C 13
-    0.5f, 0.5f, 0.5f, 1, 0, 0, 1.0f, 0.9f, 0.2f, 1.0f, 0.1f, 0.5f,  // G 14
-    0.5f, -0.5f, 0.5f, 1, 0, 0, 1.0f, 0.9f, 0.2f, 1.0f, 0, 0,       // F 15
+    0.5f, -0.5f, -0.5f, 1, 0, 0, 1.0f, 0.9f, 0.2f, 1.0f, 0, 0,       // D 12
+    0.5f, 0.5f, -0.5f, 1, 0, 0, 1.0f, 0.9f, 0.2f, 1.0f, 0.2f, 0.05f, // C 13
+    0.5f, 0.5f, 0.5f, 1, 0, 0, 1.0f, 0.9f, 0.2f, 1.0f, 0.2f, 0.05f,  // G 14
+    0.5f, -0.5f, 0.5f, 1, 0, 0, 1.0f, 0.9f, 0.2f, 1.0f, 0, 0,        // F 15
 
     -0.5f, -0.5f, -0.5f, 0, -1, 0, 0.6f, 0.2f, 1.0f, 1.0f, 0, 0, // A 16
     0.5f, -0.5f, -0.5f, 0, -1, 0, 0.6f, 0.2f, 1.0f, 1.0f, 0, 0,  // D 17
     0.5f, -0.5f, 0.5f, 0, -1, 0, 0.6f, 0.2f, 1.0f, 1.0f, 0, 0,   // F 18
     -0.5f, -0.5f, 0.5f, 0, -1, 0, 0.6f, 0.2f, 1.0f, 1.0f, 0, 0,  // E 19
 
-    0.5f, 0.5f, -0.5f, 0, 1, 0, 0.2f, 1.0f, 1.0f, 1.0f, 0.1f, 0.5f,  // C 20
-    -0.5f, 0.5f, -0.5f, 0, 1, 0, 0.2f, 1.0f, 1.0f, 1.0f, 0.1f, 0.5f, // B 21
-    -0.5f, 0.5f, 0.5f, 0, 1, 0, 0.2f, 1.0f, 1.0f, 1.0f, 0.1f, 0.5f,  // H 22
-    0.5f, 0.5f, 0.5f, 0, 1, 0, 0.2f, 1.0f, 1.0f, 1.0f, 0.1f, 0.5f,   // G 23
+    0.5f, 0.5f, -0.5f, 0, 1, 0, 0.2f, 1.0f, 1.0f, 1.0f, 0.2f, 0.05f,  // C 20
+    -0.5f, 0.5f, -0.5f, 0, 1, 0, 0.2f, 1.0f, 1.0f, 1.0f, 0.2f, 0.05f, // B 21
+    -0.5f, 0.5f, 0.5f, 0, 1, 0, 0.2f, 1.0f, 1.0f, 1.0f, 0.2f, 0.05f,  // H 22
+    0.5f, 0.5f, 0.5f, 0, 1, 0, 0.2f, 1.0f, 1.0f, 1.0f, 0.2f, 0.05f,   // G 23
 };
 
 GLuint cube_indices[] = {
@@ -101,6 +103,7 @@ void init_demo()
     time_loc = glGetUniformLocation(program, "time");
     last_movement_normal_loc = glGetUniformLocation(program, "last_movement_normal");
     last_movement_time_loc = glGetUniformLocation(program, "last_movement_time");
+    first_movement_time_loc = glGetUniformLocation(program, "first_movement_time");
 
     glm_vec3_normalize(lightDir);
 
@@ -144,12 +147,47 @@ void play_demo()
 {
     glUseProgram(program);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    vec3 move = {0, 0, 0};
+    vec3 oldmove = {0, 0, 0};
+    float speed = 0.02f;
     while (!get_key_down(GLFW_KEY_ESCAPE) && !glfwWindowShouldClose(window))
     {
         glfwPollEvents();
         poll_events(window);
         run_input_free_camera(cam, window);
         calculate_camera(cam, 0.1f, 1000);
+
+        time = (float)glfwGetTime() * 10;
+        glm_vec3_zero(move);
+        if (get_key_down(GLFW_KEY_UP))
+        {
+            move[2] += speed;
+        }
+        if (get_key_down(GLFW_KEY_DOWN))
+        {
+            move[2] -= speed;
+        }
+        if (get_key_down(GLFW_KEY_LEFT))
+        {
+            move[0] -= speed;
+        }
+        if (get_key_down(GLFW_KEY_RIGHT))
+        {
+            move[0] += speed;
+        }
+        glm_vec3_normalize(move);
+        if (glm_vec3_norm(move) > 0.0f)
+        {
+            if (glm_vec3_norm(oldmove) == 0.0f)
+            {
+                first_movement_time = time;
+            }
+            last_movement_time = time;
+            glm_vec3_copy(move, last_movement_normal);
+            glm_vec3_scale(last_movement_normal, speed, move);
+            glm_vec3_add(move, translation[3], translation[3]);
+        }
+        glm_vec3_copy(move, oldmove);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -166,6 +204,7 @@ void play_demo()
         glUniform1f(time_loc, time);
         glUniform3fv(last_movement_normal_loc, 1, last_movement_normal);
         glUniform1f(last_movement_time_loc, last_movement_time);
+        glUniform1f(first_movement_time_loc, first_movement_time);
 
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);

@@ -18,22 +18,29 @@ uniform float ambient;
 uniform float time;
 uniform vec3 last_movement_normal;
 uniform float last_movement_time;// if equal to time, then object is moving
+uniform float first_movement_time;
 
 void main(){
     gl_Position = vec4(vec3(model * vec4(pos, 1.0f)), 1.0);
     if(jiggle_coefficient > 0 && damping_coefficient > 0){
         if(last_movement_time == time){ 
             // if object is moving, then fake inertia
-            gl_Position += vec4(-last_movement_normal * jiggle_coefficient, 0.0);
+            float t=time-first_movement_time;
+            if(t >  1.57){ // 90 degree in radians
+                gl_Position += vec4(-last_movement_normal * jiggle_coefficient, 0.0);
+            }
+            else{ // when moving started, vertex should come to the inertia point in time
+                gl_Position += vec4(-last_movement_normal * jiggle_coefficient * sin(t), 0.0);
+            }
         }
         else{
             // if object isn't moving, then make a pendulum movement 
-            // and make vertex come to the point where it should be
+            // then make vertex come to the point where it should be
             float t=time-last_movement_time;
             float damping=exp(-damping_coefficient * t);
-            damping = damping>0.001?damping:0;
+            damping = damping>0.05?damping:0;
             if(damping!=0){
-                gl_Position +=vec4(sin(t+90)*jiggle_coefficient*-last_movement_normal*damping, 0.0);
+                gl_Position +=vec4(sin(t+90) * jiggle_coefficient * -last_movement_normal * damping, 0.0);
             }
         }
     }
