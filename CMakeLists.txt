@@ -1,0 +1,80 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(jiggle_demo C)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release)
+endif()
+message(NOTICE "Setting build type to '${CMAKE_BUILD_TYPE}'")
+
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}$<0:>)
+
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+set(GLFW_VULKAN_STATIC OFF CACHE BOOL "" FORCE)
+
+set(CGLM_SHARED OFF CACHE BOOL "" FORCE)
+set(CGLM_STATIC ON CACHE BOOL "" FORCE)
+set(CGLM_USE_C99 ON CACHE BOOL "" FORCE)
+set(CGLM_USE_TEST OFF CACHE BOOL "" FORCE)
+
+set(OVERRIDE_C_FLAGS ON CACHE BOOL "" FORCE)
+
+set(INTERPROCEDURAL_OPTIMIZATION ON)
+
+if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
+    set(CMAKE_GENERATOR_PLATFORM x64)
+    set(CMAKE_C_FLAGS_RELEASE "/O2 /Ob2 /Oi /Ot /Oy /GT /GL /MT /GS- /W4 /wd4324 /MP /Gy /fp:fast")
+    set(CMAKE_EXE_LINKER_FLAGS "/LTCG /machine:x64 /INCREMENTAL:NO /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup
+	/NODEFAULTLIB:MSVCRT /NODEFAULTLIB:LIBCMT")
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_subdirectory(third_party/glfw)
+	add_subdirectory(third_party/cglm)
+    FILE(GLOB_RECURSE MY_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
+    add_executable(
+    jiggle_demo
+	${MY_SOURCES}
+	${CMAKE_CURRENT_SOURCE_DIR}/third_party/glad/src/glad.c
+	)
+    find_package(OpenGL REQUIRED)
+	target_link_libraries(jiggle_demo cglm glfw msvcrt OpenGL::GL)
+	target_compile_options(jiggle_demo PUBLIC /MT)
+	set_target_properties(jiggle_demo PROPERTIES WIN32_EXECUTABLE TRUE)
+
+
+elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+
+    set(CMAKE_C_FLAGS_RELEASE "-O3 -flto -fno-stack-protector -D_FORTIFY_SOURCE=0 -mno-default -s -ffast-math")
+    if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "Distribution")
+		set(CMAKE_EXE_LINKER_FLAGS "-Wl,--gc-sections -s")
+	endif()
+	set(CMAKE_BUILD_PARALLEL_LEVEL "$(nproc)")
+	set(CMAKE_C_FLAGS_DEBUG "-Wall -ggdb3 -mavx2 -mno-default")
+    add_subdirectory(third_party/glfw)
+	add_subdirectory(third_party/cglm)
+    FILE(GLOB_RECURSE MY_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
+    add_executable(
+    jiggle_demo
+	${MY_SOURCES}
+	${CMAKE_CURRENT_SOURCE_DIR}/third_party/glad/src/glad.c
+	)
+    set(OpenGL_GL_PREFERENCE GLVND)
+    find_package(OpenGL REQUIRED)
+	target_link_libraries(jiggle_demo cglm glfw msvcrt OpenGL::GL)
+
+else()
+
+	message(FATAL_ERROR "You can compile this with MSVC on x64 windows computer or GNU on x64 ubuntu computer.")
+	
+endif()
